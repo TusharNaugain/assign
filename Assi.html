@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Animated Text Editor</title>
+    <style>
+      @page {
+        size: 21cm 29.7cm;
+        margin: 30mm 45mm 30mm 45mm;
+      }
+
+      body {
+        font-family: Arial, sans-serif;
+        background-color: #c78d19;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        margin: 0;
+      }
+
+      .editor-container {
+        position: relative;
+        width: 80%;
+        max-width: 800px;
+        background-color: rgba(208, 212, 198, 0.906);
+        border: 1px solid #0f0606;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        padding: 20px;
+      }
+
+      .undo-redo {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 10px;
+      }
+
+      .new-page-button {
+        background-color: #066e6e;
+        color: rgb(199, 28, 28);
+        border: none;
+        padding: 10px 20px;
+        cursor: pointer;
+        transition: background-color 0.3s;
+      }
+
+      .new-page-button:hover {
+        background-color: #dca612;
+      }
+
+      #text-area {
+        position: relative;
+        min-height: 400px;
+        border: 1px solid #0ea9a9c3;
+        padding: 10px;
+        overflow: hidden;
+      }
+
+      .text-element {
+        position: absolute;
+        cursor: move;
+      }
+
+      .right-sidebar {
+        display: none;
+        position: absolute;
+        top: 10px;
+        right: -250px;
+        width: 240px;
+        padding: 10px;
+        background-color: #f8f8f8;
+        border: 1px solid #ccc;
+        box-shadow: 0 2px 4px rgba(170, 193, 17, 0.1);
+      }
+
+      .right-sidebar input,
+      .right-sidebar select {
+        width: 100%;
+        margin-bottom: 10px;
+        padding: 5px;
+      }
+
+      .show-sidebar {
+        display: block;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="editor-container">
+      <div class="undo-redo">
+        <button id="undo-button">UNDO</button>
+        <button id="redo-button">REDO</button>
+      </div>
+      <div id="text-area"></div>
+      <button class="new-page-button" id="new-page-button">New Page</button>
+      <div class="right-sidebar" id="right-sidebar">
+        <label for="font-family">Font Family:</label>
+        <select id="font-family">
+          <option value="Arial">Arial</option>
+          <option value="Verdana">Verdana</option>
+          <option value="Times New Roman">Times New Roman</option>
+        </select>
+        <label for="font-size">Font Size:</label>
+        <input type="number" id="font-size" min="10" max="36" value="16" />
+        <label for="font-color">Font Color:</label>
+        <input type="color" id="font-color" value="#000000" />
+      </div>
+    </div>
+    <script>
+      let undoStack = [];
+      let redoStack = [];
+
+      document
+        .getElementById("new-page-button")
+        .addEventListener("click", function () {
+          document
+            .getElementById("right-sidebar")
+            .classList.toggle("show-sidebar");
+          addNewTextElement();
+        });
+
+      document
+        .getElementById("undo-button")
+        .addEventListener("click", function () {
+          if (undoStack.length > 0) {
+            const lastAction = undoStack.pop();
+            redoStack.push(lastAction);
+            lastAction.element.remove();
+          }
+        });
+
+      document
+        .getElementById("redo-button")
+        .addEventListener("click", function () {
+          if (redoStack.length > 0) {
+            const lastAction = redoStack.pop();
+            undoStack.push(lastAction);
+            document
+              .getElementById("text-area")
+              .appendChild(lastAction.element);
+            makeElementDraggable(lastAction.element);
+          }
+        });
+
+      function addNewTextElement() {
+        const textElement = document.createElement("div");
+        textElement.className = "text-element";
+        textElement.contentEditable = true;
+        textElement.style.fontFamily =
+          document.getElementById("font-family").value;
+        textElement.style.fontSize =
+          document.getElementById("font-size").value + "px";
+        textElement.style.color = document.getElementById("font-color").value;
+        textElement.innerText = "New Text";
+        document.getElementById("text-area").appendChild(textElement);
+
+        makeElementDraggable(textElement);
+        undoStack.push({ action: "add", element: textElement });
+        redoStack = [];
+      }
+
+      function makeElementDraggable(element) {
+        let isDragging = false;
+        let x = 0,
+          y = 0,
+          offsetX = 0,
+          offsetY = 0;
+
+        element.addEventListener("mousedown", function (e) {
+          isDragging = true;
+          x = e.clientX;
+          y = e.clientY;
+          offsetX = element.offsetLeft;
+          offsetY = element.offsetTop;
+          element.style.zIndex = 1000;
+        });
+
+        document.addEventListener("mousemove", function (e) {
+          if (isDragging) {
+            const dx = e.clientX - x;
+            const dy = e.clientY - y;
+            element.style.left = offsetX + dx + "px";
+            element.style.top = offsetY + dy + "px";
+          }
+        });
+
+        document.addEventListener("mouseup", function () {
+          isDragging = false;
+          element.style.zIndex = 0;
+        });
+      }
+    </script>
+  </body>
+</html>
